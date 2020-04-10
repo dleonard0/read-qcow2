@@ -1,0 +1,117 @@
+
+/*
+ * Copies content of a qcow2 virtual image to stdout.
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <err.h>
+
+#include "qcow2.h"
+
+static int
+parse_int(const char *s, uint64_t *value_return)
+{
+	char *end = NULL;
+	errno = 0;
+	unsigned long long val = strtoull(s, &end, 0);
+	if (!*s || !end || *end || errno)
+		return -1;
+	*value_return = val;
+	return 0;
+}
+
+
+int
+main(int argc, char *argv[])
+{
+	const char *path;
+	int ch;
+	uint64_t seek = 0;
+	uint64_t len = UINT64_MAX;
+	int error = 0;
+
+	while ((ch = getopt(argc, argv, "n:s:")) != -1)
+		switch (ch) {
+		case 'n':
+			if (parse_int(optarg, &len) == -1) {
+				warnx("bad length");
+				error = 1;
+			}
+			break;
+		case 's':
+			if (parse_int(optarg, &seek) == -1) {
+				warnx("bad seek");
+				error = 1;
+			}
+			break;
+		default:
+			error = 1;
+		}
+
+	if (optind < argc)
+		path = argv[optind++];
+	else
+		path = "-";
+
+	if (optind < argc)
+		error = 1;
+
+	if (error) {
+		fprintf(stderr,
+		    "usage: %s [-n len] [-s skip] [file.qcow2|-]\n",
+		    argv[0]);
+		exit(2);
+	}
+
+	int fd;
+	if (strcmp(path, "-") == 0) {
+		path = "<stdin>";
+		fd = STDIN_FILENO;
+	} else {
+		fd = open(path, O_RDONLY);
+		if (fd == -1)
+			err(1, "%s", path);
+	}
+
+	/* Open the image */
+	errno = 0;
+	const char *error_msg = NULL;
+	struct qcow2 *q = qcow2_open(fd, &error_msg);
+	if (!q) {
+		if (errno != ENOTSUP)
+			err(1, "%s", path);
+		else
+			errx(1, "%s: %s", path, error_msg);
+	}
+
+	/* Check the seek/len parametes against the size */
+	uint64_t file_len = qcow2_get_size(q);
+	if (file_len - seek > len) {
+		warnx("truncated");
+		len = file_len - seek;
+	}
+
+	/* Copy out the range */
+	char buf[BUFSIZ];
+	while (len) {
+		int rlen = qcow2_read(q, buf, len < BUFSIZ ? len : BUFSIZ, seek);
+		if (rlen == -1)
+			err(1, "%s", path);
+		if (rlen == 0)
+			break; /* EOF */
+		int n = write(STDOUT_FILENO, buf, rlen);
+		if (n == -1)
+			err(1, "write");
+		len -= n;
+		seek += n;
+	}
+
+	qcow2_close(q);
+
+	exit(0);
+}

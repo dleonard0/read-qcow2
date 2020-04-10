@@ -86,12 +86,12 @@ main(int argc, char *argv[])
 			errx(1, "%s: %s", path, error_msg);
 	}
 
-	/* Check the seek/len parametes against the size */
+	/* Restrict the seek/len parameters to the file size */
 	uint64_t file_len = qcow2_get_size(q);
-	if (file_len - seek > len) {
-		warnx("truncated");
+	if (seek > file_len)
+		errx(1, "invalid seek");
+	if (len > file_len - seek)
 		len = file_len - seek;
-	}
 
 	/* Copy out the range */
 	char buf[BUFSIZ];

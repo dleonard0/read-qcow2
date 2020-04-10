@@ -14,17 +14,14 @@
 #include "qcow2.h"
 
 static int
-parse_int(const char *s, uint64_t *value_return)
+to_uint64(const char *s, uint64_t *ret)
 {
-	char *end = NULL;
-	errno = 0;
-	unsigned long long val = strtoull(s, &end, 0);
-	if (!*s || !end || *end || errno)
+	int64_t i64;
+	if (sscanf(s, "%" SCNi64, &i64) != 1)
 		return -1;
-	*value_return = val;
+	*ret = i64;
 	return 0;
 }
-
 
 int
 main(int argc, char *argv[])
@@ -38,13 +35,13 @@ main(int argc, char *argv[])
 	while ((ch = getopt(argc, argv, "n:s:")) != -1)
 		switch (ch) {
 		case 'n':
-			if (parse_int(optarg, &len) == -1) {
+			if (to_uint64(optarg, &len) == -1) {
 				warnx("bad length");
 				error = 1;
 			}
 			break;
 		case 's':
-			if (parse_int(optarg, &seek) == -1) {
+			if (to_uint64(optarg, &seek) == -1) {
 				warnx("bad seek");
 				error = 1;
 			}

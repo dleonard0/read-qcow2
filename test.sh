@@ -31,14 +31,18 @@ dd if=/dev/zero bs=1024 count=4096 of=$tmp.zero4M.raw status=none
 result $? "empty 4M"
 rm -f $tmp.zero4M.qcow2 $tmp.zero4M.raw
 
-# Convert a "random" 8MB+ input into qcow2, and then
-# check that what we extract is what we put in
-cat catqcow2 >$tmp.blah8M.raw
+# Create a "random" 8MB input file.
+# Its length will be aligned to the cluster sizes used below.
+cat catqcow2 README.md >$tmp.blah8M.raw
 while [ $(wc -c <$tmp.blah8M.raw) -lt 8388608 ]; do
 	# making semi-random input
 	cat $tmp.blah8M.raw $tmp.blah8M.raw > $tmp.blah8M.raw2
 	mv $tmp.blah8M.raw2 $tmp.blah8M.raw
 done
+head -c 8388608 <$tmp.blah8M.raw >$tmp.blah8M.raw2
+mv $tmp.blah8M.raw2 $tmp.blah8M.raw
+
+# check that what we extract is what we put in
 qemu-img convert -q -f raw -O qcow2 $tmp.blah8M.raw $tmp.blah8M.qcow2
 ./catqcow2 $tmp.blah8M.qcow2 | cmp -s - $tmp.blah8M.raw
 result $? "random 8M identical"

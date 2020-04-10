@@ -5,11 +5,11 @@ Unallocated image data is read as all zeros.
 It does not know about encryption or compression.
 It can only access the active data, not the snapshots.
 It cannot make changes to the image file.
-The image's cluster size cannot be smaller than the system page size.
+The qcow2 file's cluster size must be at least the system page size.
 
-It is small.
-You only need files qcow2.c and qcow2.h if you want to access qcow2
-file content from C.
+But it is small and standalone.
+You only need the files [qcow2.c](qcow2.c) and [qcow2.h](qcow2.h)
+to access the content from C.
 
 Open a qcow2 image file
 -
@@ -53,3 +53,8 @@ This is the same as `len` unless the copy would exceed the image size.
 
 On error returns -1 and sets `errno`.
 The content of `dest` is unspecified.
+
+References
+=
+
+ * [qcow2.txt](https://git.qemu.org/?p=qemu.git;a=blob;f=docs/interop/qcow2.txt) spec

@@ -174,12 +174,12 @@ qcow2_read(struct qcow2 *q, void *dest, size_t len, uint64_t offset)
 	else if (len > q->size - offset)
 		len = q->size - offset;
 
-	while (len) {
-		const uint64_t *l1_table = load_cluster(q,
-		    q->l1_table_offset, KIND_L1);
-		if (!l1_table)
-			return -1;
+	const uint64_t *l1_table = load_cluster(q,
+	    q->l1_table_offset, KIND_L1);
+	if (!l1_table)
+		return -1;
 
+	while (len) {
 		uint64_t data_offset;
 		uint64_t l1_val = be64toh(l1_table[l1_index]);
 		uint64_t l2_offset = l1_val & UINT64_C(0x00fffffffffffe00);

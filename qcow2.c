@@ -132,10 +132,6 @@ qcow2_open(int fd, const char **error_ret)
 
 	q->l2_entries = q->cluster_size / sizeof (uint64_t);
 
-	unsigned kind;
-	for (kind = 0; kind < KIND_MAX; kind++)
-		q->cluster[kind].offset = 0;
-
 	return q;
 
 fail:;

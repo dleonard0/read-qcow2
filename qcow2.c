@@ -65,8 +65,8 @@ load_cluster(struct qcow2 *q, uint64_t offset, unsigned kind)
 		return c->base;	/* Cache hit */
 
 	/* Cache miss; try to map */
-	void *base = mmap(NULL, q->cluster_size, PROT_READ, MAP_SHARED, q->fd,
-		offset);
+	void *base = mmap(NULL, q->cluster_size, PROT_READ, MAP_SHARED,
+	    q->fd, offset);
 	if (base == MAP_FAILED)
 		return NULL;
 
@@ -82,12 +82,13 @@ qcow2_open(int fd, const char **error_ret)
 {
 	struct qcow2 *q = NULL;
 
-#define FAIL(err, msg) do {			\
+#define FAIL(err, msg)				\
+	do {					\
 		if (error_ret)			\
 			*error_ret = msg;	\
 		errno = err;			\
 		goto fail;			\
-	    } while (0)
+	} while (0)
 
 	/* Check the header */
 	char hdr[104];
@@ -193,13 +194,15 @@ qcow2_read(struct qcow2 *q, void *dest, size_t len, uint64_t offset)
 
 			uint64_t l2_val = be64toh(l2_table[l2_index]);
 			if ((l2_val >> 62) & 1) {
-				errno = ENOTSUP; /* Compressed cluster not supported */
+				/* Compressed cluster not supported */
+				errno = ENOTSUP;
 				return -1;
 			}
 			if ((l2_val & 1))
 				data_offset = 0;
 			else
-				data_offset = l2_val & UINT64_C(0x00fffffffffffe00);
+				data_offset = l2_val &
+				   UINT64_C(0x00fffffffffffe00);
 		}
 
 		/* Be careful not to read beyond the end of the cluster */

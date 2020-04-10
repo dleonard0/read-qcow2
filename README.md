@@ -5,17 +5,19 @@ Unallocated image data is read as all zeros.
 It does not know about encryption or compression.
 It can only access the active data, not the snapshots.
 It cannot make changes to the image file.
+The image's cluster size cannot be smaller than the system page size.
 
 It is small.
-You only need files qcow2.c and qcow2.h if you want to access qcow2 file content from C.
+You only need files qcow2.c and qcow2.h if you want to access qcow2
+file content from C.
 
 Open a qcow2 image file
 -
 
     struct qcow2 *qcow2_open(int fd, const char **error_ret);
 
-This function checks that `fd` is an uncompressed qcow2 image file, and returns
-a context structure to access it.
+This function checks that `fd` is an uncompressed qcow2 image file, and
+returns a context structure to access it.
 
 The file descriptor `fd` must not be accessed by the caller afterwards.
 It will be closed later by `qcow2_close()`.
@@ -44,8 +46,8 @@ Read data from the image
 
     int qcow2_read(struct qcow2 *q, void *dest, size_t len, uint64_t offset);
 
-This function copies into `dest` at most `len` bytes of data from the image's virtual content
-starting at `offset`.
+This function copies to `dest` at most `len` bytes of data
+from the image's virtual content starting at `offset`.
 On success, returns the number of bytes copied out to `dest`.
 This is the same as `len` unless the copy would exceed the image size.
 

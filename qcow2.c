@@ -13,10 +13,9 @@
 #include "qcow2.h"
 
 /* Cluster kinds, used for the cache */
-#define KIND_L1		0
-#define KIND_L2		1
-#define KIND_DATA	2
-#define KIND_MAX	3
+#define KIND_L2		0
+#define KIND_DATA	1
+#define KIND_MAX	2
 
 /* Context structure for an opened qcow2 image file*/
 struct qcow2 {
@@ -24,8 +23,12 @@ struct qcow2 {
 
 	/* extracted from file header */
 	uint64_t size;
-	uint64_t l1_table_offset;
+	uint64_t *l1_table;
+	size_t l1_table_size;
 	size_t cluster_size;
+	unsigned int l1_shift;
+	unsigned int l2_amask;
+	unsigned int l2_shift;
 
 	/* cluster cache */
 	struct cluster {
@@ -121,12 +124,33 @@ qcow2_open(int fd, const char **error_ret)
 
 	q->fd = fd;
 	q->size = be64tohp(&hdr[24]);
-	q->l1_table_offset = be64tohp(&hdr[40]);
 
 	uint32_t cluster_bits = be32tohp(&hdr[20]);
 	q->cluster_size = (size_t)1 << cluster_bits;
 	if (!q->cluster_size)
 		FAIL(ENOTSUP, "too big");
+
+	/* The cluster size must be at least that of a page,
+	 * which is the smallest alignment mmap can do */
+	long pagesize = sysconf(_SC_PAGESIZE);
+	if (q->cluster_size < pagesize)
+		FAIL(ENOTSUP, "too fine");
+
+	/* Precompute shifts and masks to extract the L1
+	 * and L2 indicies from the offset. */
+	q->l2_shift = cluster_bits;
+	q->l2_amask = (1U << (cluster_bits - 3)) - 1;
+	q->l1_shift = cluster_bits + cluster_bits - 3;
+
+	uint64_t l1_table_offset = be64tohp(&hdr[40]);
+	uint32_t l1_size = be32tohp(&hdr[36]);
+	q->l1_table_size = l1_size * sizeof (uint64_t);
+
+	void *base = mmap(NULL, q->l1_table_size, PROT_READ, MAP_SHARED,
+	    q->fd, l1_table_offset);
+	if (base == MAP_FAILED)
+		FAIL(errno, "corrupt L1");
+	q->l1_table = base;
 
 	return q;
 
@@ -149,6 +173,7 @@ qcow2_close(struct qcow2 *q)
 	for (kind = 0; kind < KIND_MAX; kind++)
 		if (q->cluster[kind].offset)
 			munmap(q->cluster[kind].base, q->cluster_size);
+	munmap(q->l1_table, q->l1_table_size);
 	close(q->fd);
 	free(q);
 }
@@ -163,9 +188,6 @@ qcow2_get_size(struct qcow2 *q)
 int
 qcow2_read(struct qcow2 *q, void *dest, size_t len, uint64_t offset)
 {
-	unsigned int l2_entries = q->cluster_size / sizeof (uint64_t);
-	unsigned int l2_index = (offset / q->cluster_size) % l2_entries;
-	unsigned int l1_index = (offset / q->cluster_size) / l2_entries;
 	int ret = 0;
 
 	/* Ensure read within bounds */
@@ -174,15 +196,12 @@ qcow2_read(struct qcow2 *q, void *dest, size_t len, uint64_t offset)
 	else if (len > q->size - offset)
 		len = q->size - offset;
 
-	const uint64_t *l1_table = load_cluster(q,
-	    q->l1_table_offset, KIND_L1);
-	if (!l1_table)
-		return -1;
-
 	while (len) {
-		uint64_t data_offset;
-		uint64_t l1_val = be64toh(l1_table[l1_index]);
+		unsigned int l2_index = (offset >> q->l2_shift) & q->l2_amask;
+		unsigned int l1_index = (offset >> q->l1_shift);
+		uint64_t l1_val = be64toh(q->l1_table[l1_index]);
 		uint64_t l2_offset = l1_val & UINT64_C(0x00fffffffffffe00);
+		uint64_t data_offset;
 
 		if (!l2_offset) {
 			data_offset = 0;

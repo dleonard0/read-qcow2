@@ -26,7 +26,6 @@ struct qcow2 {
 	uint64_t size;
 	uint64_t l1_table_offset;
 	size_t cluster_size;
-	unsigned int l2_entries;
 
 	/* cluster cache */
 	struct cluster {
@@ -62,7 +61,6 @@ load_cluster(struct qcow2 *q, uint64_t offset, unsigned kind)
 	}
 
 	struct cluster *c = &q->cluster[kind];
-
 	if (c->offset == offset)
 		return c->base;	/* Cache hit */
 
@@ -121,16 +119,13 @@ qcow2_open(int fd, const char **error_ret)
 	}
 
 	q->fd = fd;
-	uint32_t cluster_bits = be32tohp(&hdr[20]);
 	q->size = be64tohp(&hdr[24]);
 	q->l1_table_offset = be64tohp(&hdr[40]);
 
-	/* Derived values */
+	uint32_t cluster_bits = be32tohp(&hdr[20]);
 	q->cluster_size = (size_t)1 << cluster_bits;
 	if (!q->cluster_size)
 		FAIL(ENOTSUP, "too big");
-
-	q->l2_entries = q->cluster_size / sizeof (uint64_t);
 
 	return q;
 
@@ -167,8 +162,9 @@ qcow2_get_size(struct qcow2 *q)
 int
 qcow2_read(struct qcow2 *q, void *dest, size_t len, uint64_t offset)
 {
-	unsigned int l2_index = (offset / q->cluster_size) % q->l2_entries;
-	unsigned int l1_index = (offset / q->cluster_size) / q->l2_entries;
+	unsigned int l2_entries = q->cluster_size / sizeof (uint64_t);
+	unsigned int l2_index = (offset / q->cluster_size) % l2_entries;
+	unsigned int l1_index = (offset / q->cluster_size) / l2_entries;
 	int ret = 0;
 
 	/* Ensure read within bounds */

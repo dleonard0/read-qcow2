@@ -1,6 +1,7 @@
 
 /*
- * Copies content of a qcow2 virtual image to stdout.
+ * An example program that copies the content of a qcow2 image to stdout.
+ * It doubles as a tool to exercise the functions in qcow2.h.
  */
 
 #include <stdio.h>

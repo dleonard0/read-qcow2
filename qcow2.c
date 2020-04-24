@@ -6,9 +6,14 @@
 
 #include <unistd.h>
 #include <errno.h>
-#include <endian.h>
 #include <string.h>
 #include <sys/mman.h>
+
+#if defined(NO_ENDIAN_H)
+# include "be.h"
+#else
+# include <endian.h>
+#endif
 
 #include "qcow2.h"
 

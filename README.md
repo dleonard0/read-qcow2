@@ -8,8 +8,10 @@ It cannot make changes to the image file.
 The qcow2 file's cluster size must be at least the system page size.
 
 But it is small and standalone.
-You only need the files [qcow2.c](qcow2.c) and [qcow2.h](qcow2.h)
-to access the content from C.
+I know I said "library" above, but
+you only need the files [qcow2.c](qcow2.c) and [qcow2.h](qcow2.h)
+(and perhaps [be.h](be.h))
+to access the content of a qcow2 file from C.
 
 Open a qcow2 image file
 -

@@ -1,7 +1,7 @@
 
 /*
  * Open and read from a qcow2 image file.
- * David Leonard, 2020.
+ * David Leonard, 2020. CC0
  */
 
 #include <unistd.h>

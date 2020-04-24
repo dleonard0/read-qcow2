@@ -2,6 +2,7 @@
 /*
  * be32toh() and be64toh()
  * Only use this header if your system doesn't have a working <endian.h>.
+ * David Leonard, 2020. CC0
  */
 
 #pragma once

@@ -95,7 +95,9 @@ qcow2_open(int fd, const char **error_ret)
 
 	/* Check the header */
 	char hdr[104];
-	ssize_t n = pread(fd, hdr, sizeof hdr, 0);
+	if (lseek(fd, 0, SEEK_SET) == -1)
+		FAIL(errno, "lseek");
+	ssize_t n = read(fd, hdr, sizeof hdr);
 	if (n == -1)
 		FAIL(errno, "read");
 	if (n != sizeof hdr)
@@ -233,8 +235,10 @@ qcow2_read(struct qcow2 *q, void *dest, size_t len, uint64_t offset)
 		if (!data_offset) {
 			memset(dest, '\0', rlen);
 		} else {
-			ssize_t n = pread(q->fd, dest, rlen,
-			    data_offset + cluster_offset);
+			if (lseek(q->fd, data_offset + cluster_offset,
+			    SEEK_SET) == -1)
+				return -1;
+			ssize_t n = read(q->fd, dest, rlen);
 			if (n == -1)
 				return -1;
 			rlen = n;

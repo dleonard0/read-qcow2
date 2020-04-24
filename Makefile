@@ -18,7 +18,7 @@ catqcow2: $(OBJS)
 #qcow2.o: CFLAGS += -DNO_ENDIAN_H
 
 clean:	
-	rm -f catqcow2 $(OBJS)
+	rm -f catqcow2 be-t $(OBJS)
 
 check: test.sh catqcow2 be-t
 	sh test.sh

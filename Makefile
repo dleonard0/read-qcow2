@@ -6,8 +6,10 @@
 # project as they are public domain for that reason.
 
 CFLAGS = -Wall -pedantic -g
-OBJS = catqcow2.o qcow2.o
 
+default: check
+
+OBJS = catqcow2.o qcow2.o
 catqcow2: $(OBJS)
 	$(LINK.c) $(OBJS) $(LDLIBS) -o $@
 
@@ -22,3 +24,5 @@ check: test.sh catqcow2 be-t
 	sh test.sh
 	./be-t
 	@echo PASS
+
+.PHONY: check clean

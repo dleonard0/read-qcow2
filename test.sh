@@ -39,7 +39,7 @@ while [ $(wc -c <$tmp.blah8M.raw) -lt 8388608 ]; do
 	cat $tmp.blah8M.raw $tmp.blah8M.raw > $tmp.blah8M.raw2
 	mv $tmp.blah8M.raw2 $tmp.blah8M.raw
 done
-head -c 8388608 <$tmp.blah8M.raw >$tmp.blah8M.raw2
+dd bs=1048576 count=8 status=none <$tmp.blah8M.raw >$tmp.blah8M.raw2
 mv $tmp.blah8M.raw2 $tmp.blah8M.raw
 
 # check that what we extract is what we put in

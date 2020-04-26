@@ -82,12 +82,8 @@ main(int argc, char *argv[])
 	errno = 0;
 	const char *error_msg = NULL;
 	struct qcow2 *q = qcow2_open(fd, &error_msg);
-	if (!q) {
-		if (errno != ENOTSUP)
-			err(1, "%s", path);
-		else
-			errx(1, "%s: %s", path, error_msg);
-	}
+	if (!q)
+		err(1, "%s: %s", path, error_msg);
 
 	/* Restrict the seek/len parameters to the file size */
 	uint64_t file_len = qcow2_get_size(q);

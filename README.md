@@ -21,11 +21,37 @@ Open a qcow2 image file
 This function checks that `fd` is an uncompressed qcow2 image file, and
 returns a context structure to access it.
 
-The file descriptor `fd` must not be accessed by the caller afterwards.
-It will be closed later by `qcow2_close()`.
-
 On error, this function returns NULL, closes the file `fd`, sets `errno` and
 puts an error message in the optional `error_ret`.
+
+On success, returns a pointer to a context structure, and leaves
+the `*error_ret` unchanged.
+The caller should eventually release the context structure with
+`qcow2_close()`.
+
+This API is designed for use with this style of error handling:
+
+        struct qcow2 *q = NULL;
+    
+        int fd = open(path, O_RDONLY), &error);
+        if (fd == -1) {
+            warn("%s", path);
+            goto cleanup;
+        }
+    
+        const char *error;
+        q = qcow2_open(fd, &error);
+        if (!q) {
+            warn("%s: %s", path, error);
+            goto cleanup;
+        }
+    
+        ... qcow2_get_size(q, ...) ...
+        ... qcow2_read(q, ...) ...
+    
+    cleanup:
+        qcow2_close(q);
+
 
 Close the qcow2 image file
 -
@@ -53,8 +79,10 @@ from the image's virtual content starting at `offset`.
 On success, returns the number of bytes copied out to `dest`.
 This is the same as `len` unless the copy would exceed the image size.
 
-On error returns -1 and sets `errno`.
-The content of `dest` is unspecified.
+In particular, this function will not return a "short" read whenever there
+is more data available.
+
+On error returns -1, sets `errno` and the content of `dest` are unspecified.
 
 References
 =

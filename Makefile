@@ -15,7 +15,7 @@ catqcow2: $(OBJS)
 
 # Uncomment the next line if <endian.h> is unavailable or bad and
 # you need to use be.h.
-#qcow2.o: CFLAGS += -DNO_ENDIAN_H
+#qcow2.o: CPPFLAGS += -DNO_ENDIAN_H
 
 clean:	
 	rm -f catqcow2 be-t $(OBJS)

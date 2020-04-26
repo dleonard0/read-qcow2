@@ -14,6 +14,8 @@
 
 #include "qcow2.h"
 
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+
 static int
 to_uint64(const char *s, uint64_t *ret)
 {
@@ -97,7 +99,7 @@ main(int argc, char *argv[])
 	/* Copy out the range */
 	char buf[BUFSIZ];
 	while (len) {
-		int rlen = qcow2_read(q, buf, len < BUFSIZ ? len : BUFSIZ, seek);
+		int rlen = qcow2_read(q, buf, MIN(len, BUFSIZ), seek);
 		if (rlen == -1)
 			err(1, "%s", path);
 		if (rlen == 0)
